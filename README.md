@@ -2,7 +2,7 @@
 Here are some PowerShell scripts which will give you an automation in terms of tracking MS/Office 365 licenses 
 
 chk_licenses.ps1 is adapted to check only OFFICESUBSCRIPTION:OFFICE 365 PROPLUS
-chk_licenses_all.ps1 will check all the subscriptions from the list - see README.md
+chk_licenses_all.ps1 will check all the subscriptions from the list - see plan_names.txt or check here https://docs.microsoft.com/en-us/azure/active-directory/users-groups-roles/licensing-service-plan-reference and consider to use Get-AzureADSubscribedSku in order to get subscribed SKUs to Microsoft services.
 
 .SYNOPSIS
 chk_licenses - PowerShell script for checking the current state of used licenses in Office 365
