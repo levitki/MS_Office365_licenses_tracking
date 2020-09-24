@@ -45,5 +45,5 @@ Written by: Julian Koehler and Leonid Levitchi
 
 Based on https://docs.microsoft.com/en-us/microsoft-365/enterprise/view-licenses-and-services-with-microsoft-365-powershell?view=o365-worldwide
 
-If you are not using Windows OS please consider this https://github.com/PowerShell/PowerShel in context of PowerShell installation.
+If you are not using Windows OS please consider this https://github.com/PowerShell/PowerShell in context of PowerShell installation.
 
