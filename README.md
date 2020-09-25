@@ -32,6 +32,7 @@ Optional: The license threshold, if not set 10 will be the limit.
 .\chk_licenses.ps1 nsc 
 this will store the MS365 user account credentials in the same directory as the script
 
+
 .EXAMPLE
 .\chk_licenses.ps1 gsc
 
@@ -46,4 +47,14 @@ Written by Julian Koehler and updated by Leonid Levitchi
 Based on https://docs.microsoft.com/en-us/microsoft-365/enterprise/view-licenses-and-services-with-microsoft-365-powershell?view=o365-worldwide
 
 If you are not using Windows OS please consider this https://github.com/PowerShell/PowerShell in context of PowerShell installation.
+
+
+PROMO:
+
+Nowadays along with #CI/CD it is also needed to have Continuous Cost Control. So, here are some #PowerShell Scripts which really could help you on this side.
+Our "licenses tracking #automation" will help you (for #free) to keep one eye on the number of used/unused licenses and adjust it accordingly (see P.S.). You just have to schedule the script to run on daily or weekly bases :).
+
+P.S:: On more hint related to this topic: you can ask your #Microsoft Reseller to provide you a kind of self-service marketplace feature, on top of your MS/Azure Subscriptions. Normally, it is like a Web-based Control Panel, which can be used in terms of changing the number of license/subscription plans.
+
+BTW: Many thanks to Julian Köhler and Bernd Bürkle! :)
 
