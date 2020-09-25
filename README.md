@@ -41,7 +41,7 @@ see also start.ps1 as an example
 
 
 .NOTES
-Written by: Julian Koehler and Leonid Levitchi
+Written by Julian Koehler and updated by Leonid Levitchi
 
 Based on https://docs.microsoft.com/en-us/microsoft-365/enterprise/view-licenses-and-services-with-microsoft-365-powershell?view=o365-worldwide
 
