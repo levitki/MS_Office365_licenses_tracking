@@ -11,7 +11,7 @@ chk_licenses - PowerShell script for checking the current state of used licenses
 This script checks the current state of the used licenses in an Office 365 tenant and depending on the set threshold a warning mail will be sent to a given mail address. Also it can create a credential store from which user account credentials can be used for cennecting with the cloud tenant.
 
 .PARAMETER nsc
-Create a new cloud user account credentials in the same directory as the script
+Creates a new cloud user account credentials in the same directory as the script
 
 .PARAMETER gsc
 Get an overview of all stored credentials
