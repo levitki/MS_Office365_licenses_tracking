@@ -1,10 +1,12 @@
 # MS_Office365_licenses_tracking
 Here are some PowerShell scripts which will give you an automation in terms of tracking MS/Office 365 licenses 
 
-Please make sure that Public Internet is avialable from your PowerShell (v5):
+Please make sure that Public Internet is available from your PowerShell (v5):
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 And also please install MSOnline module:
+
 Install-Module –Name MSOnline
 
 chk_licenses.ps1 is adapted to check only OFFICESUBSCRIPTION:OFFICE 365 PROPLUS
