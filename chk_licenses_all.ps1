@@ -1,205 +1,110 @@
-﻿
 
 param(
-	[string]$cusr,
-	[string[]]$mail,
-	[string]$mrel,
-	[int]$tres
+    [string]$cusr,
+    [string[]]$mail,
+    [string]$mrel,
+    [int]$tres = 10
 )
 
-$KeyPath = split-path -parent $MyInvocation.MyCommand.Definition
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ModulePath = Join-Path $ScriptDir "O365LicenseLib.psm1"
 
-Function New-StoredCredential 
-{
-    if (!(Test-Path Variable:\KeyPath)) {
-        Write-Warning "The `$KeyPath variable has not been set. Consider adding `$KeyPath to your PowerShell profile to avoid this prompt."
-        $path = Read-Host -Prompt "Enter a path for stored credentials"
-        Set-Variable -Name KeyPath -Scope Global -Value $path
-
-        if (!(Test-Path $KeyPath)) {
-        
-            try {
-                New-Item -ItemType Directory -Path $KeyPath -ErrorAction STOP | Out-Null
-            }
-            catch {
-                throw $_.Exception.Message
-            }           
-        }
-    }
-
-    $Credential = Get-Credential -Message "Enter a user name and password"
-
-    $Credential.Password | ConvertFrom-SecureString | Out-File "$($KeyPath)\$($Credential.Username).cred" -Force
-	
-	echo "User credential account $($Credential.Username) was successfully created." >>$log
+if (!(Test-Path $ModulePath)) {
+    Write-Error "Module not found at $ModulePath"
+    exit 1
 }
+
+Import-Module $ModulePath -Force
+
+# Aliases for backward compatibility
 Set-Alias -Name nsc -Value New-StoredCredential
-
-Function Get-StoredCredential 
-{
-    param(
-        [Parameter(Mandatory=$false, ParameterSetName="Get")]
-        [string]$UserName,
-        [Parameter(Mandatory=$false, ParameterSetName="List")]
-        [switch]$List
-        )
-
-    if (!(Test-Path Variable:\KeyPath)) {
-        Write-Warning "The `$KeyPath variable has not been set. Consider adding `$KeyPath to your PowerShell profile to avoid this prompt."
-        $path = Read-Host -Prompt "Enter a path for stored credentials"
-        Set-Variable -Name KeyPath -Scope Global -Value $path
-    }
-
-
-    if ($List) {
-
-        try {
-        $CredentialList = @(Get-ChildItem -Path $keypath -Filter *.cred -ErrorAction STOP)
-
-        foreach ($Cred in $CredentialList) {
-            Write-Host "Username: $($Cred.BaseName)"
-            }
-        }
-        catch {
-            Write-Warning $_.Exception.Message
-        }
-
-    }
-
-    if ($UserName) {
-        if (Test-Path "$($KeyPath)\$($Username).cred") {
-        
-            $PwdSecureString = Get-Content "$($KeyPath)\$($Username).cred" | ConvertTo-SecureString
-            
-            $Credential = New-Object System.Management.Automation.PSCredential -ArgumentList $Username, $PwdSecureString
-        }
-        else {
-            throw "Unable to locate a credential for $($Username)" >>$log
-			date >>$log
-			exit
-        }
-
-        return $Credential
-    }
-}
 Set-Alias -Name gsc -Value Get-StoredCredential
 
-#Set Error Action to Silently Continue
-$ErrorActionPreference = "SilentlyContinue"
+# Variables
+$LogPath = Join-Path $ScriptDir "chk_licenses.log"
+$PlanPath = Join-Path $ScriptDir "plan_names.txt"
+$BodyPath = Join-Path $ScriptDir "body.txt"
+$MailFrom = "noreply@example.com"
+$KeyPath = $ScriptDir
 
-#Script Version
-$sScriptVersion = "1.0.0"
+Write-Log "#################################################" $LogPath
 
-###	variablen
-$body = "$KeyPath\body.txt"
-$plan = "$KeyPath\plan_names.txt"
-$log = "$KeyPath\chk_licenses.log"
-$mrep = "noreply@example.com"
-$chk = 0
-
-echo "" >>$log
-echo "#################################################" >>$log
-date >>$log
-
-if (!($cusr))
-{
-	echo "No connect-user were given, exiting!" >>$log
-	date >>$log
-	exit
-}
-elseif ( $cusr -eq "nsc" )
-{
-	echo "Creating new user credentials." >>$log
-	nsc
-	
-	date >>$log
-	exit
-}
-elseif ( $cusr -eq "gsc" )
-{
-	echo "Listing new user credentials." >>$log
-	gsc -List
-	
-	date >>$log
-	exit
+if ($cusr -eq "nsc") {
+    Write-Log "Action: Creating new user credentials." $LogPath -ToConsole
+    try {
+        $msg = New-StoredCredential -KeyPath $KeyPath
+        Write-Log $msg $LogPath -ToConsole
+    } catch {
+        Write-Log "ERROR: $($_.Exception.Message)" $LogPath -ToConsole
+    }
+    exit
 }
 
-if (!($mail))
-{
-	echo "No mail-user were given, exiting!" >>$log
-	date >>$log
-	exit
+if ($cusr -eq "gsc") {
+    Write-Log "Action: Listing user credentials." $LogPath -ToConsole
+    Get-StoredCredential -KeyPath $KeyPath -List
+    exit
 }
 
-if (!($mrel))
-{
-	echo "No mail-relay-server were given, exiting!" >>$log
-	date >>$log
-	exit
+# Validation
+if (!($cusr)) {
+    Write-Log "ERROR: No connect-user (cusr) provided." $LogPath -ToConsole
+    exit 1
 }
 
-if (!($tres))
-{
-	echo "No threshold were given, setting it to 10!" >>$log
-	$tres = 10
+if (!($mail)) {
+    Write-Log "ERROR: No recipient mail address (mail) provided." $LogPath -ToConsole
+    exit 1
 }
 
-if (!(Test-Path $plan) )
-{
-	echo "O365 naming list is not in the same directory as the script, exiting!" >>$log
-	exit
+if (!($mrel)) {
+    Write-Log "ERROR: No mail relay server (mrel) provided." $LogPath -ToConsole
+    exit 1
 }
 
-if ( Test-Path $body )
-{
-	del $body
+if (!(Test-Path $PlanPath)) {
+    Write-Log "ERROR: Plan name file not found at $PlanPath" $LogPath -ToConsole
+    exit 1
 }
 
-echo "Connect-User: $cusr"  >>$log
-echo "Mail-user: $mail"  >>$log
-echo "Mail-Relay-Server: $mrel"  >>$log
-echo "License threshold: $tres"  >>$log
+# Clean up old body file
+if (Test-Path $BodyPath) { Remove-Item $BodyPath -ErrorAction SilentlyContinue }
 
-echo "Following Azure/MS/Office365 Subscriptions have less than $tres licenses available:" >> $body
-echo "" >> $body
+Write-Log "Connect-User: $cusr" $LogPath
+Write-Log "Mail-user: $($mail -join ', ')" $LogPath
+Write-Log "Mail-Relay-Server: $mrel" $LogPath
+Write-Log "License threshold: $tres" $LogPath
 
-Connect-MsolService -Credential (Get-StoredCredential -UserName $cusr)
-if ( $? )
-{
-	echo "O365 connect successfull." >>$log
-}
-else
-{
-	echo "Could not connect to O365!" >>$log
-	date >>$log
-	exit
+# Connection
+try {
+    $Cred = Get-StoredCredential -KeyPath $KeyPath -UserName $cusr
+    Connect-MsolService -Credential $Cred
+    Write-Log "O365 connection successful." $LogPath
+} catch {
+    Write-Log "ERROR: Could not connect to O365! $($_.Exception.Message)" $LogPath -ToConsole
+    exit 1
 }
 
-$erg = Get-MsolAccountSku
-foreach ($er in $erg) { if ( $er.ActiveUnits -gt 0 ) { if (($er.ActiveUnits-$er.ConsumedUnits) -lt $tres) { $chk = 1; foreach ( $lin in `gc $plan` ) { if ($lin -match $er.SkuPartNumber) { $nam = $lin.split(":")[1] ; 
-echo "AboName: $nam, Total: $($er.ActiveUnits), Used: $($er.ConsumedUnits), Available $(($er.ActiveUnits-$er.ConsumedUnits)) " >> $body ; echo "" >> $body } } } } }
+# Reporting
+try {
+    Write-Log "Checking for all Azure/MS/Office365 licenses..." $LogPath
+    $Report = Get-LicenseReport -Threshold $tres -PlanFilePath $PlanPath
 
-if ( $chk -eq 1 )
-{
-	echo "Critical Abos found!" >>$log
-	echo "" >>$log
-	gc $body | Out-String >>$log
-	
-	Send-MailMessage -SmtpServer $mrel -To $mail -From $mrep -Subject "Office365/Azure: Available licenses report" -body (gc $body | Out-String)
-	if ( $? )
-	{
-		echo "Mail sending successfull." >>$log
-	}
-	else
-	{
-		echo "Could not send Mail to $mails!" >>$log
-	}
-}
-else
-{
-	echo "No critical Abos found!" >>$log
+    if ($Report.Count -gt 0) {
+        Write-Log "Critical subscriptions found: $($Report.Count)" $LogPath
+
+        $BodyContent = "Following Azure/MS/Office365 Subscriptions have less than $tres licenses available:`r`n`r`n"
+        $BodyContent += ($Report -join "`r`n")
+        $BodyContent | Out-File $BodyPath -Encoding UTF8
+
+        Write-Log "Sending mail report..." $LogPath
+        Send-MailMessage -SmtpServer $mrel -To $mail -From $MailFrom -Subject "Office365/Azure: Available licenses report" -Body $BodyContent
+        Write-Log "Mail sending successful." $LogPath
+    } else {
+        Write-Log "No critical subscriptions found." $LogPath
+    }
+} catch {
+    Write-Log "ERROR during report generation: $($_.Exception.Message)" $LogPath -ToConsole
 }
 
-date >>$log
-
-exit
+Write-Log "Script execution finished." $LogPath
