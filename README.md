@@ -1,70 +1,314 @@
-# MS_Office365_licenses_tracking
-Here are some PowerShell scripts which will give you an automation in terms of tracking MS/Office 365 licenses 
+# MS Office 365 License Tracking
 
-Please make sure that Public Internet is available from your PowerShell (v5):
+Automated PowerShell scripts for monitoring Microsoft 365/Office 365 license usage with threshold alerts.
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+**Version 2.0** - Modernized with configuration file support, HTML emails, and Microsoft Graph API compatibility.
 
-And also please install MSOnline module:
+## Features
 
-Install-Module –Name MSOnline
+✅ **Automated License Monitoring** - Track license usage across all your Office 365 subscriptions  
+✅ **Threshold Alerts** - Get notified when licenses are running low  
+✅ **Multiple Report Formats** - HTML or plain text email reports  
+✅ **Configuration File Support** - Easy setup with JSON config files  
+✅ **Flexible Filtering** - Monitor specific license types or all licenses  
+✅ **Export Capabilities** - Export data to JSON, CSV, or text files  
+✅ **Retry Logic** - Robust error handling with automatic retries  
+✅ **Modern API Support** - Works with MSOnline and Microsoft Graph API  
+✅ **Log Rotation** - Automatic log file management
 
-chk_licenses.ps1 is adapted to check only OFFICESUBSCRIPTION:OFFICE 365 PROPLUS
-chk_licenses_all.ps1 will check all the subscriptions from the list - see plan_names.txt or check here https://docs.microsoft.com/en-us/azure/active-directory/users-groups-roles/licensing-service-plan-reference and consider to use Get-AzureADSubscribedSku in order to get subscribed SKUs to Microsoft services.
+## Quick Start
 
-Both scripts use the `O365LicenseLib.psm1` helper module for shared functions.
+### Prerequisites
 
-.SYNOPSIS
-chk_licenses - PowerShell script for checking the current state of used licenses in Office 365
+1. **PowerShell 5.1 or later** (PowerShell 7+ recommended)
 
-.DESCRIPTION 
-This script checks the current state of the used licenses in an Office 365 tenant and depending on the set threshold a warning mail will be sent to a given mail address. Also it can create a credential store from which user account credentials can be used for cennecting with the cloud tenant.
+2. **Internet Access** with TLS 1.2:
+   ```powershell
+   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+   ```
 
-.PARAMETER nsc
-Creates a new cloud user account credentials in the same directory as the script
+3. **MSOnline Module** (or Microsoft.Graph for Graph API):
+   ```powershell
+   Install-Module -Name MSOnline
+   # OR for Microsoft Graph API (recommended for new deployments):
+   Install-Module -Name Microsoft.Graph
+   ```
 
-.PARAMETER gsc
-Get an overview of all stored credentials
+### Installation
 
-.PARAMETER cusr 
-The cloud account userprincipalname (UPN) for tenant connect.
+1. Clone or download this repository
+2. Navigate to the script directory
+3. Create a configuration file:
+   ```powershell
+   .\chk_licenses_unified.ps1 -Action CreateConfig
+   ```
 
-.PARAMETER mail 
-The mail addresses of the receiving people.
+4. Edit `config.json` with your settings
 
-.PARAMETER mrel 
-The IP address of the mail relay server.
+5. Store your credentials:
+   ```powershell
+   .\chk_licenses_unified.ps1 -Action CreateCredential
+   ```
 
-.PARAMETER [tres]
-Optional: The license threshold, if not set 10 will be the limit.
+### Basic Usage
 
-.EXAMPLE
-.\chk_licenses.ps1 nsc 
-this will store the MS365 user account credentials in the same directory as the script
+**Using configuration file (recommended):**
+```powershell
+.\chk_licenses_unified.ps1 -ConfigPath config.json
+```
 
+**Using command-line parameters:**
+```powershell
+.\chk_licenses_unified.ps1 -cusr "admin@contoso.onmicrosoft.com" -mail "alerts@example.com" -mrel "smtp.example.com" -tres 10
+```
 
-.EXAMPLE
-.\chk_licenses.ps1 gsc
+**Check specific licenses only:**
+```powershell
+.\chk_licenses_unified.ps1 -ConfigPath config.json -Filter "OFFICESUBSCRIPTION"
+```
 
-.EXAMPLE
-.\chk_licenses.ps1 -cusr "CLOUDUSERACCOUNT@MAIL.COM" -mail "RECEIVERMAILADDRESS1@MAIL.COM", "RECEIVERMAILADDRESS2@MAIL.COM" -mrel "MAILRELAYSERVERIP" [-tres 10]
-see also start.ps1 as an example
+**HTML email report:**
+```powershell
+.\chk_licenses_unified.ps1 -ConfigPath config.json -EmailFormat Html
+```
 
+**Export to file:**
+```powershell
+.\chk_licenses_unified.ps1 -ConfigPath config.json -ExportPath "./reports/licenses.json"
+```
 
-.NOTES
-Written by Julian Koehler and updated by Leonid Levitchi
+**Test run (WhatIf mode):**
+```powershell
+.\chk_licenses_unified.ps1 -ConfigPath config.json -WhatIf
+```
 
-Based on https://docs.microsoft.com/en-us/microsoft-365/enterprise/view-licenses-and-services-with-microsoft-365-powershell?view=o365-worldwide
+## Configuration File
 
-If you are not using Windows OS please consider this https://github.com/PowerShell/PowerShell in context of PowerShell installation.
+The `config.json` file allows you to configure all settings in one place:
 
+```json
+{
+  "connection": {
+    "userName": "admin@contoso.onmicrosoft.com",
+    "apiType": "MSOnline",
+    "retryAttempts": 3,
+    "retryDelaySeconds": 5
+  },
+  "email": {
+    "smtp": "smtp.example.com",
+    "from": "noreply@example.com",
+    "to": ["admin@example.com", "alerts@example.com"],
+    "format": "html",
+    "subject": "Office 365 License Alert"
+  },
+  "logging": {
+    "level": "INFO",
+    "maxSizeKB": 1024,
+    "maxFiles": 5,
+    "console": true
+  },
+  "thresholds": {
+    "default": 10,
+    "specific": {
+      "OFFICESUBSCRIPTION": 5,
+      "ENTERPRISEPREMIUM": 15
+    }
+  },
+  "filters": [],
+  "caching": {
+    "enabled": false,
+    "expiryMinutes": 60
+  }
+}
+```
 
-PROMO:
+## Scripts Overview
 
-Nowadays along with #CI/CD it is also needed to have Continuous Cost Control. So, here are some #PowerShell Scripts which really could help you on this side.
-Our "licenses tracking #automation" will help you (for #free) to keep one eye on the number of used/unused licenses and adjust it accordingly (see P.S.). You just have to schedule the script to run on daily or weekly bases :).
+### Main Scripts
 
-P.S:: On more hint related to this topic: you can ask your #Microsoft Reseller to provide you a kind of self-service marketplace feature, on top of your MS/Azure Subscriptions. Normally, it is like a Web-based Control Panel, which can be used in terms of changing the number of license/subscription plans.
+| Script | Description | Status |
+|--------|-------------|--------|
+| **chk_licenses_unified.ps1** | Modern unified script with all features | ✅ **Recommended** |
+| chk_licenses.ps1 | Legacy script for Office 365 ProPlus only | ⚠️ Deprecated |
+| chk_licenses_all.ps1 | Legacy script for all licenses | ⚠️ Deprecated |
 
-BTW: Many thanks to Julian Köhler and Bernd Bürkle! :)
+### Supporting Files
 
+- **O365LicenseLib.psm1** - Core library module with all functions
+- **config-sample.json** - Sample configuration file template
+- **plan_names.txt** - License SKU to friendly name mappings
+- **start.ps1** - Example starter script
+
+## Migration from Legacy Scripts
+
+If you're using the old `chk_licenses.ps1` or `chk_licenses_all.ps1`:
+
+1. **Create a config file:**
+   ```powershell
+   .\chk_licenses_unified.ps1 -Action CreateConfig -ConfigPath myconfig.json
+   ```
+
+2. **Edit the config file** with your existing parameters:
+   - `cusr` → `connection.userName`
+   - `mrel` → `email.smtp`
+   - `mail` → `email.to`
+   - `tres` → `thresholds.default`
+
+3. **Your existing credentials will work** - no need to recreate them
+
+4. **Run the new script:**
+   ```powershell
+   .\chk_licenses_unified.ps1 -ConfigPath myconfig.json
+   ```
+
+## Scheduling
+
+To run automatically on a schedule:
+
+**Windows Task Scheduler:**
+```powershell
+$action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-File "C:\scripts\chk_licenses_unified.ps1" -ConfigPath "C:\scripts\config.json"'
+$trigger = New-ScheduledTaskTrigger -Daily -At 8am
+Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "Office365 License Check" -Description "Daily Office 365 license monitoring"
+```
+
+**Linux/macOS Cron:**
+```bash
+# Run daily at 8 AM
+0 8 * * * /usr/local/bin/pwsh /path/to/chk_licenses_unified.ps1 -ConfigPath /path/to/config.json
+```
+
+## Advanced Examples
+
+### Multiple Tenants
+```powershell
+# Create separate config files for each tenant
+.\chk_licenses_unified.ps1 -ConfigPath tenant1.json
+.\chk_licenses_unified.ps1 -ConfigPath tenant2.json
+```
+
+### Custom Thresholds per License
+Edit `config.json`:
+```json
+{
+  "thresholds": {
+    "default": 10,
+    "specific": {
+      "OFFICESUBSCRIPTION": 5,      // Alert when < 5 Office ProPlus licenses
+      "ENTERPRISEPREMIUM": 20,       // Alert when < 20 E5 licenses  
+      "POWER_BI_PRO": 3              // Alert when < 3 Power BI Pro licenses
+    }
+  }
+}
+```
+
+### Export and Analyze Over Time
+```powershell
+# Daily export with timestamp
+$date = Get-Date -Format "yyyy-MM-dd"
+.\chk_licenses_unified.ps1 -ConfigPath config.json -ExportPath "./reports/licenses-$date.json"
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"Module not found" error:**
+```powershell
+Install-Module -Name MSOnline -Force
+```
+
+**"Unable to connect to Office 365":**
+- Verify credentials are correct
+- Check internet connectivity
+- Ensure TLS 1.2 is enabled
+- Try re-creating credentials with `-Action CreateCredential`
+
+**"Failed to send email":**
+- Verify SMTP server address and port
+- Check firewall settings
+- Some SMTP servers require authentication (use relay that allows unauthenticated local sends)
+
+**Encoding issues:**
+- All files are UTF-8 encoded
+- If you see garbled characters, convert files to UTF-8
+
+### Enable Debug Logging
+
+Edit `config.json`:
+```json
+{
+  "logging": {
+    "level": "DEBUG",
+    "console": true
+  }
+}
+```
+
+### Test Connection
+```powershell
+# Manual connection test
+Import-Module MSOnline
+$cred = Get-Credential
+Connect-MsolService -Credential $cred
+Get-MsolAccountSku
+```
+
+## API Migration
+
+**MSOnline module is being deprecated by Microsoft.** While still supported in these scripts, consider migrating to Microsoft Graph API:
+
+1. Install the Graph module:
+   ```powershell
+   Install-Module -Name Microsoft.Graph -Scope CurrentUser
+   ```
+
+2. Update `config.json`:
+   ```json
+   {
+     "connection": {
+       "apiType": "Graph"
+     }
+   }
+   ```
+
+3. Register an app in Azure AD and configure appropriate permissions (see [MIGRATION.md](MIGRATION.md) when available)
+
+## License SKU Reference
+
+See `plan_names.txt` for all supported license SKUs, or check Microsoft's official documentation:
+- [Azure AD Service Plan Reference](https://docs.microsoft.com/en-us/azure/active-directory/users-groups-roles/licensing-service-plan-reference)
+
+Common SKU Part Numbers:
+- `OFFICESUBSCRIPTION` - Office 365 ProPlus
+- `ENTERPRISEPREMIUM` - Office 365 Enterprise E5
+- `ENTERPRISEPACK` - Office 365 Enterprise E3
+- `SPE_E3` - Microsoft 365 E3
+- `SPE_E5` - Microsoft 365 E5
+
+## Contributing
+
+Feel free to submit issues, fork the repository, and create pull requests for any improvements.
+
+## Credits
+
+- **Original Author:** Julian Koehler
+- **Enhanced by:** Leonid Levitchi
+- **Contributors:** Bernd Bürkle and community
+
+## Support
+
+For questions or issues:
+1. Check the [Troubleshooting](#troubleshooting) section
+2. Review closed issues in the repository
+3. Open a new issue with detailed information
+
+## Notes
+
+**Continuous Cost Control:** Use this automation to maintain visibility into your license usage and optimize costs by adjusting subscriptions as needed.
+
+**Pro Tip:** Many Microsoft resellers offer self-service portals where you can adjust license counts directly through a web interface.
+
+---
+
+**Made with ❤️ for Office 365 administrators everywhere**

@@ -1,10 +1,44 @@
 
+<#
+.SYNOPSIS
+[DEPRECATED] Use chk_licenses_unified.ps1 instead
+
+This script is maintained for backward compatibility but is deprecated.
+Please migrate to chk_licenses_unified.ps1 for better features and performance.
+
+Migration Guide:
+1. Create a config file: .\chk_licenses_unified.ps1 -Action CreateConfig
+2. Edit config.json with your settings
+3. Run: .\chk_licenses_unified.ps1 -ConfigPath config.json
+
+Or use command-line parameters as before:
+.\chk_licenses_unified.ps1 -cusr "user@domain.com" -mail "admin@example.com" -mrel "smtp.server.com"
+#>
+
 param(
     [string]$cusr,
     [string[]]$mail,
     [string]$mrel,
     [int]$tres = 10
 )
+
+# Display deprecation warning
+Write-Host ""
+Write-Host "======================================================" -ForegroundColor Yellow
+Write-Host " DEPRECATION WARNING" -ForegroundColor Yellow
+Write-Host "======================================================" -ForegroundColor Yellow
+Write-Host " This script is deprecated. Please use:" -ForegroundColor Yellow
+Write-Host " chk_licenses_unified.ps1" -ForegroundColor Cyan
+Write-Host ""
+Write-Host " Benefits of the new script:" -ForegroundColor White
+Write-Host "  - JSON configuration file support" -ForegroundColor White
+Write-Host "  - HTML email reports" -ForegroundColor White
+Write-Host "  - Better error handling" -ForegroundColor White
+Write-Host "  - Microsoft Graph API support" -ForegroundColor White
+Write-Host "======================================================" -ForegroundColor Yellow
+Write-Host ""
+Start-Sleep -Seconds 2
+
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ModulePath = Join-Path $ScriptDir "O365LicenseLib.psm1"

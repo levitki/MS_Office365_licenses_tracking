@@ -1,0 +1,35 @@
+{
+    "connection": {
+        "userName": "admin@contoso.onmicrosoft.com",
+        "apiType": "MSOnline",
+        "retryAttempts": 3,
+        "retryDelaySeconds": 5
+    },
+    "email": {
+        "smtp": "smtp.example.com",
+        "from": "noreply@example.com",
+        "to": [
+            "admin@example.com"
+        ],
+        "format": "html",
+        "subject": "Office 365 License Alert"
+    },
+    "logging": {
+        "level": "INFO",
+        "maxSizeKB": 1024,
+        "maxFiles": 5,
+        "console": true
+    },
+    "thresholds": {
+        "default": 10,
+        "specific": {
+            "OFFICESUBSCRIPTION": 5,
+            "ENTERPRISEPREMIUM": 15
+        }
+    },
+    "filters": [],
+    "caching": {
+        "enabled": false,
+        "expiryMinutes": 60
+    }
+}
